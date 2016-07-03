@@ -19,13 +19,14 @@ class TankDrive
 		void turnLeft(int turnAngle);
 		void turnRight(int turnAngle);
 
-		int TimeAccel() const;
+
+    Trapezoid& GetTrapezoid();
+    int TimeAccel() const;
 		void SetTimeAccel(int timeAccel);
-   void SetMaxSpeed (int maxSpeed);
-   void SetMinSpeed (int minSpeed);
+    void SetMaxSpeed (int maxSpeed);
+    void SetMinSpeed (int minSpeed);
 
-		Trapezoid& GetTrapezoid();
-
+   int InitializeMPU();
 
 	//private:
 		void doDrive(int driveTime);
@@ -36,6 +37,8 @@ class TankDrive
 		int _reversePinRight;
 		int _forwardPinLeft;
 		int _reversePinLeft;
+    int _mpuRet;
+    int _currentAngle;
 };
 
 #endif

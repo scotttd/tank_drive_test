@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include "TankDrive.h"
 #include "Trapezoid.h"
+#include "mpu.h"
 
 TankDrive::TankDrive(int speedPinLeft, int speedPinRight, int forwardPinRight, int reversePinRight, int forwardPinLeft, int reversePinLeft) :TrapPath()
 {
@@ -30,6 +31,37 @@ TankDrive::TankDrive(int speedPinLeft, int speedPinRight, int forwardPinRight, i
 
 }
 
+int TankDrive::InitializeMPU()
+{
+  int notStable = 1;
+  int stableRead = 0;
+  int oldAngle=180;
+  long calibrationStart = millis();
+  _mpuRet = mympu_open(200);
+  Serial.print("MPU init: "); Serial.println(_mpuRet);
+  Serial.println("Starting MPU stabilization check. This can take a minute.");
+  Serial.println("The MPU requires 8 seconds of no movement to calibrate the Gyro with Accelerometer.");
+  delay(8000); //Delay 2 seconds to settle the minitbot for MPU initialization
+  while (notStable){ 
+    _mpuRet = mympu_update();
+    _currentAngle = mympu.ypr[0];
+    if (_currentAngle == oldAngle) {
+      stableRead=stableRead+1;
+      }
+    else {
+      stableRead=0;
+    }
+    //Serial.println(_currentAngle);
+    if (stableRead > 8000 and notStable){
+      Serial.print("Stablised in ");Serial.print((millis()-calibrationStart)/1000);Serial.print(" seconds");
+      Serial.print(" at ");Serial.print(_currentAngle);Serial.println(" degrees.");
+      notStable=0;
+    }
+    oldAngle=_currentAngle;
+   }
+}
+
+
 void TankDrive::fullStop ()
 {
   // now turn off motors
@@ -50,9 +82,9 @@ void TankDrive::doDrive(int driveTime)
     TrapPath.setStartTime(startTime);
 
    while (millis() - startTime < driveTime) {
-    //_mpuRet = mympu_update();
-    //currentAngle = mympu.ypr[0];
-    //Serial.println(currentAngle);
+    _mpuRet = mympu_update();
+    _currentAngle = mympu.ypr[0];
+    //Serial.println(_currentAngle);
     //Serial.println("not Angle");
     cSpeed = TrapPath.getSetPoint(millis()-startTime);
     //Serial.println(cSpeed);
@@ -69,10 +101,7 @@ void TankDrive::driveForward(int driveTime)
   digitalWrite(_reversePinLeft, LOW);
   digitalWrite(_forwardPinRight, HIGH);
   digitalWrite(_reversePinRight, LOW);
-
-  char b;
-  Serial.println(String(_speedPinLeft));
-
+  
   doDrive (driveTime);
 }
 
