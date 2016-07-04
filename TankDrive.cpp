@@ -8,8 +8,9 @@
 #include "TankDrive.h"
 #include "Trapezoid.h"
 #include "mpu.h"
+#include "PID_sd.h"
 
-TankDrive::TankDrive(int speedPinLeft, int speedPinRight, int forwardPinRight, int reversePinRight, int forwardPinLeft, int reversePinLeft) :TrapPath()
+TankDrive::TankDrive(int speedPinLeft, int speedPinRight, int forwardPinRight, int reversePinRight, int forwardPinLeft, int reversePinLeft)
 {
 	// connect motor controller pins to Arduino digital pins
 	// motor Left
@@ -29,6 +30,10 @@ TankDrive::TankDrive(int speedPinLeft, int speedPinRight, int forwardPinRight, i
     pinMode(forwardPinRight, OUTPUT);
     pinMode(reversePinRight, OUTPUT);
 
+    _usePID=1; //Will not use PID by default.
+
+    PID MotorPID = PID();
+    Trapezoid TrapPath = Trapezoid();
 }
 
 int TankDrive::InitializeMPU()
@@ -73,23 +78,54 @@ void TankDrive::fullStop ()
 
 void TankDrive::doDrive(int driveTime)
 {
+    _mpuRet = mympu_update();
+    float baseAngle = mympu.ypr[0];
+
 	  long startTime = millis();
 	  long cTime = 0;
 	  int cSpeed = 150;
-
+    float cAngle = 0;
+    float correction=0;
+    float correctLeft=0;
+    float correctRight=0;
+    _simpleDeadband = 0.75;
+    _simpleKp=20;
 
     TrapPath.setRunTime(driveTime);
     TrapPath.setStartTime(startTime);
 
+   //Using Standard P to control direction
    while (millis() - startTime < driveTime) {
     _mpuRet = mympu_update();
     _currentAngle = mympu.ypr[0];
-    //Serial.println(_currentAngle);
-    //Serial.println("not Angle");
     cSpeed = TrapPath.getSetPoint(millis()-startTime);
-    //Serial.println(cSpeed);
-    digitalWrite(_speedPinLeft, cSpeed);
-    digitalWrite(_speedPinRight, cSpeed);
+    cAngle = baseAngle-_currentAngle;
+    if (_usePID) {
+      correction = MotorPID.Compute(cAngle,baseAngle);
+      correctLeft = correction;
+      correctRight = -correction;
+    }
+    else { //use standard Kp multiplier
+        if (cAngle>_simpleDeadband){
+          correctLeft = -cAngle*_simpleKp;
+          correctRight = cAngle*_simpleKp;
+        }
+        else if (cAngle<(_simpleDeadband*-1)){
+          correctLeft = cAngle*_simpleKp;
+          correctRight = -cAngle*_simpleKp;
+        }
+    }
+    //Serial Monitor report of P follwing
+    Serial.print("Angle: ");Serial.print(cAngle);
+    Serial.print(" Speed: ");Serial.print(cSpeed);
+    //Serial.print(" Correct Left: ");Serial.print(correctLeft);
+    //Serial.print(" Correct Right: ");Serial.println(correctRight);
+    Serial.print(" Correct Left: ");Serial.print(constrain(cSpeed+correctLeft,0,255));
+    Serial.print(" Correct Right: ");Serial.println(constrain(cSpeed+correctRight,0,255));
+
+
+//    digitalWrite(_speedPinLeft, constrain(cSpeed+correctLeft,0,255));
+//    digitalWrite(_speedPinRight, constrain(cSpeed+correctRight,0,255));
    }
    fullStop();
  }
@@ -162,7 +198,11 @@ void TankDrive::SetMinSpeed(int minSpeed)
 */
 Trapezoid& TankDrive::GetTrapezoid()
 {
-	return TrapPath;
+  return TrapPath;
+}
+PID& TankDrive::GetPID()
+{
+  return MotorPID;
 }
 
 /*void Trapezoid::SetTrapezoid(const Trapezoid& trapezoid)

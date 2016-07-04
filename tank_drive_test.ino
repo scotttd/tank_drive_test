@@ -17,6 +17,10 @@ void setup() {
     MainDrive.SetMaxSpeed(180);
     MainDrive.SetMinSpeed(50);
     MainDrive.SetTimeAccel(1000);
+    
+  //Setup Motor PID values Kp:Ki:Kd
+    MainDrive.MotorPID.SetTunings(1,0,0);
+    MainDrive.MotorPID.SetOutputLimits(MainDrive.TrapPath._minSpeed,MainDrive.TrapPath._maxSpeed);
 
   //Initialize the MPU
     MainDrive.InitializeMPU();
