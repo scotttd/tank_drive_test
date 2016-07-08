@@ -57,7 +57,7 @@ int TankDrive::InitializeMPU()
       stableRead=0;
     }
     //Serial.println(_currentAngle);
-    if (stableRead > 8000 and notStable){
+    if (stableRead > 5000 and notStable){
       Serial.print("Stablised in ");Serial.print((millis()-calibrationStart)/1000);Serial.print(" seconds");
       Serial.print(" at ");Serial.print(_currentAngle);Serial.println(" degrees.");
       notStable=0;
@@ -76,14 +76,36 @@ void TankDrive::fullStop ()
   digitalWrite(_reversePinRight, LOW);
 }
 
+void TankDrive::doTurn(int turnDegrees)
+{
+    _mpuRet = mympu_update();
+    float baseAngle = mympu.ypr[0];
+    
+    int cSpeed = 120;
+    float cAngle = 0;
+    float correction=0;
+    float correctLeft=0;
+    float correctRight=0;
+
+    while(cAngle < turnDegrees) {
+       _mpuRet = mympu_update();
+       _currentAngle = mympu.ypr[0];
+       cAngle = baseAngle-_currentAngle;
+       cAngle = abs(cAngle);
+      digitalWrite(_speedPinLeft, cSpeed);
+      digitalWrite(_speedPinRight, cSpeed);
+      
+    }
+    fullStop();
+}
+
 void TankDrive::doDrive(int driveTime)
 {
     _mpuRet = mympu_update();
     float baseAngle = mympu.ypr[0];
-
-	  long startTime = millis();
-	  long cTime = 0;
-	  int cSpeed = 150;
+    long startTime = millis();
+    long cTime = 0;
+    int cSpeed = 150;
     float cAngle = 0;
     float correction=0;
     float correctLeft=0;
@@ -102,8 +124,8 @@ void TankDrive::doDrive(int driveTime)
     cAngle = baseAngle-_currentAngle;
     if (_usePID) {
       correction = MotorPID.Compute(cAngle,baseAngle);
-      correctLeft = correction;
-      correctRight = -correction;
+      correctLeft = -correction;
+      correctRight = correction;
     }
     else { //use standard Kp multiplier
         if (cAngle>_simpleDeadband){
@@ -120,12 +142,12 @@ void TankDrive::doDrive(int driveTime)
     Serial.print(" Speed: ");Serial.print(cSpeed);
     //Serial.print(" Correct Left: ");Serial.print(correctLeft);
     //Serial.print(" Correct Right: ");Serial.println(correctRight);
-    Serial.print(" Correct Left: ");Serial.print(constrain(cSpeed+correctLeft,0,255));
-    Serial.print(" Correct Right: ");Serial.println(constrain(cSpeed+correctRight,0,255));
+    Serial.print(" Correct Left: ");Serial.print(constrain(cSpeed+correctLeft,5,255));
+    Serial.print(" Correct Right: ");Serial.println(constrain(cSpeed+correctRight,5,255));
 
 
-//    digitalWrite(_speedPinLeft, constrain(cSpeed+correctLeft,0,255));
-//    digitalWrite(_speedPinRight, constrain(cSpeed+correctRight,0,255));
+     digitalWrite(_speedPinLeft, constrain(cSpeed+correctLeft,0,255));
+     digitalWrite(_speedPinRight, constrain(cSpeed+correctRight,0,255));
    }
    fullStop();
  }
@@ -160,6 +182,8 @@ void TankDrive::turnLeft(int turnAngle)
 	  digitalWrite(_reversePinLeft, LOW);
 	  digitalWrite(_forwardPinRight, HIGH);
 	  digitalWrite(_reversePinRight, LOW);
+
+         doTurn(turnAngle);
 }
 
 void TankDrive::turnRight(int turnAngle)
@@ -169,6 +193,8 @@ void TankDrive::turnRight(int turnAngle)
 	  digitalWrite(_reversePinLeft, LOW);
 	  digitalWrite(_forwardPinRight, LOW);
 	  digitalWrite(_reversePinRight, LOW);
+
+         doTurn(turnAngle);
 }
 /*
 int TankDrive::TimeAccel() const

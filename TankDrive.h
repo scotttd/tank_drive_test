@@ -22,7 +22,7 @@ class TankDrive
 
     Trapezoid& GetTrapezoid();
     int TimeAccel() const;
-		void SetTimeAccel(int timeAccel);
+    void SetTimeAccel(int timeAccel);
     void SetMaxSpeed (int maxSpeed);
     void SetMinSpeed (int minSpeed);
 
@@ -36,6 +36,7 @@ class TankDrive
 	//private:
 		// routine to drive straight
 		void doDrive(int driveTime);
+                void doTurn(int turnDegrees);
 		//Create a Trapezoid class to calculate accelerationa nd deceleration
 		Trapezoid TrapPath;
 

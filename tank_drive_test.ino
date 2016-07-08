@@ -1,4 +1,4 @@
-
+// Teank drive testing
 #include "TankDrive.h"
 #include "freeram.h"
 #include "I2Cdev.h"
@@ -6,6 +6,11 @@
 
  //Create TankDrive (speedPinLeft, SpeedPinRight, forwardPinLeft, ReversePinLeft, forwardPinRight, revesePinRight)
    TankDrive MainDrive(10, 5, 9, 8, 7, 6);
+
+// Blinking led variables 
+unsigned long previousToggleLed = 0;   // Last time the led was toggled
+bool ledState                   = 0;   // Current state of Led
+const int kBlinkLed             = 13;  // Pin of internal Led
 
 void setup() {
    //Setup Communication Defaults
@@ -19,8 +24,8 @@ void setup() {
     MainDrive.SetTimeAccel(1000);
     
   //Setup Motor PID values Kp:Ki:Kd
-    MainDrive.MotorPID.SetTunings(1,0,0);
-    MainDrive.MotorPID.SetOutputLimits(MainDrive.TrapPath._minSpeed,MainDrive.TrapPath._maxSpeed);
+    MainDrive.MotorPID.SetTunings(50,15,15);
+    MainDrive.MotorPID.SetOutputLimits(-255,255);
 
   //Initialize the MPU
     MainDrive.InitializeMPU();
@@ -28,6 +33,8 @@ void setup() {
  		
 	//drive Forward Command in milliseconds
 	  MainDrive.driveForward(4000);
+          delay(4000);
+          MainDrive.turnLeft(160);
 
 }
 
@@ -35,3 +42,10 @@ void loop() {
   //put your main code here, to run repeatedly:
 
 }
+
+// Toggle led state
+void toggleLed()
+{  
+  ledState = !ledState;
+  digitalWrite(kBlinkLed, ledState?HIGH:LOW);
+}  

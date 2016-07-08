@@ -18,7 +18,7 @@ Trapezoid::Trapezoid()
 {
 	_timeAccel = 1000;
 	_minSpeed = 130;
-	_maxSpeed = 200;
+	_maxSpeed = 230;
 	_startTime = 0;
 	_runTime = 0;
 }
